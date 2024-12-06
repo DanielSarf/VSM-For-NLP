@@ -29,7 +29,7 @@ def calculate_idf(term: str, documents: List[str]) -> float:
         if term in words:
             num_docs_with_term += 1
 
-    # Adding alpha in denominator avoids divide by 0 error
+    # Smoothing parameter to avoid divide by 0 error
     alpha = 1e-6
 
     return math.log((len(documents) + alpha) / (num_docs_with_term + alpha))
