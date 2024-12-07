@@ -1,30 +1,35 @@
 import numpy as np
-from typing import Union, Literal
-from helper_functions import document_vectorizer
 
-# def jaccard_distance(d1, d2) -> float:
-#     pass
+def jaccard_similarity(v1: np.ndarray, v2: np.ndarray) -> float:
+    assert v1.size == v2.size
+    
+    # Convert the vectors to binary just in case binary vectorization was not used as a bug
+    v1_binary = (v1 > 0).astype(int)
+    v2_binary = (v2 > 0).astype(int)
 
-def cosine_distance(d1: Union[str, np.ndarray], d2: Union[str, np.ndarray], docs_length_difference_handling: Literal["truncate", "padding"] = "truncate") -> float:
-    d1, d2 = [d if isinstance(d, np.ndarray) else document_vectorizer(d) for d in [d1, d2]]
+    intersection = np.sum(v1_binary & v2_binary)
+    union = np.sum(v1_binary | v2_binary)
 
-    if d1.size != d2.size:
-        pass #Todo
+    # To avoid divide by zero error
+    if union == 0:
+        return 0.0
+    
+    return intersection / union
 
-    magnitude_product = np.linalg.norm(d1) * np.linalg.norm(d2)
+def cosine_distance(v1: np.ndarray, v2: np.ndarray) -> float:
+    assert v1.size == v2.size
+
+    magnitude_product = np.linalg.norm(v1) * np.linalg.norm(v2)
     
     # To avoid divide by zero error
     if magnitude_product == 0:
         return 0.0
     
-    return np.dot(d1, d2) / magnitude_product
+    return np.dot(v1, v2) / magnitude_product
 
-def l2_norm_distance(d1: Union[str, np.ndarray], d2: Union[str, np.ndarray], docs_length_difference_handling: Literal["truncate", "padding"] = "truncate") -> float:
-    d1, d2 = [d if isinstance(d, np.ndarray) else document_vectorizer(d) for d in [d1, d2]]
-    
-    if d1.size != d2.size:
-        pass #Todo
+def l2_norm_distance(v1: np.ndarray, v2: np.ndarray) -> float:
+    assert v1.size == v2.size
 
-    difference = d1 - d2
+    difference = v1 - v2
 
     return np.sqrt(np.dot(difference, difference))

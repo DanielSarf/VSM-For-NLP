@@ -1,46 +1,28 @@
-import re
 from typing import List
 import math
 
-delimiter_pattern = r"[ \t\n.,!?;:\"'(){}\[\]<>@#%^&*|/~+=\\-]+"
-
-def calculate_tf(document_text: str) -> dict[str, float]:
-    words = [word for word in re.split(delimiter_pattern, document_text) if word.strip()]
-
+def calculate_tf(document_text_tokens: str) -> dict[str, float]:
     tf = {}
     
-    for word in words:
-        if word in tf:
-            tf[word] += 1
+    for token in document_text_tokens:
+        if token in tf:
+            tf[token] += 1
         else:
-            tf[word] = 1
+            tf[token] = 1
     
-    for word in tf:
-        tf[word] = tf[word] / len(words)
+    for token in tf:
+        tf[token] = tf[token] / len(document_text_tokens)
     
     return tf
 
-def calculate_idf(term: str, documents: List[str]) -> float:
+def calculate_idf(term: str, tokenized_documents: List[str]) -> float:
     num_docs_with_term = 0
 
-    for document_text in documents:
-        words = [word for word in re.split(delimiter_pattern, document_text) if word.strip()]
-
-        if term in words:
+    for tokenized_document in tokenized_documents:
+        if term in tokenized_document:
             num_docs_with_term += 1
 
     # Smoothing parameter to avoid divide by 0 error
     alpha = 1e-6
 
-    return math.log((len(documents) + alpha) / (num_docs_with_term + alpha))
-
-def calculate_tf_idf_from_text(term: str, document_text: str, documents: List[str]) -> float:
-    tf = calculate_tf(document_text)
-    idf = calculate_idf(term, documents)
-
-    return tf.get(term, 0) * idf
-
-def calculate_tf_idf_from_tf(term: str, tf: dict[str, float], documents: List[str]) -> float:
-    idf = calculate_idf(term, documents)
-
-    return tf.get(term, 0) * idf
+    return math.log((len(tokenized_documents) + alpha) / (num_docs_with_term + alpha))
