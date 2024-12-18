@@ -67,16 +67,17 @@ def binary_count_vectorization(all_document_texts: List[str], corpus: set, delim
     return np.array(vectors)
 
 def SBERT_vectorization(all_document_texts: List[str], corpus: set, delimiters: str, mode: str) -> np.ndarray:
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    tokenizer = AutoTokenizer.from_pretrained("paraphrase-MiniLM-L6-v2")
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
     
-    grouped_vectors = []
+    document_vectors = []
 
     for document_text in all_document_texts:
-        document_vectors = []
 
         split_texts = split_text_on_max_length(document_text, model.max_seq_length, tokenizer)
 
-        grouped_vectors.append(model.encode(split_texts))
+        average_vector = np.mean(model.encode(split_texts), axis=0)
 
-    return grouped_vectors
+        document_vectors.append(average_vector)
+
+    return np.array(document_vectors)

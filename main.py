@@ -1,6 +1,6 @@
 from vectorizers import tf_idf_vectorization, count_vectorization, binary_count_vectorization, SBERT_vectorization
 from similarity_measures import cosine_distance, l2_norm_distance, jaccard_similarity
-from helper_functions import load_documents_from_folder, load_document, create_corpus, rank_outliers_with_scores, create_clusters, display_query_result, display_detect_outliers_result, display_clusters
+from helper_functions import load_documents_from_folder, load_document, create_corpus, handle_query_mode, handle_outlier_detection_mode, handle_cluster_mode
 
 def start_process():
     delimiters = delimiter_var.get()         # Get delimiters from input
@@ -8,7 +8,6 @@ def start_process():
     mode = mode_var.get()                    # Get selected mode
     source = source_var.get()                # Get source (Text or Document)
     source_path = source_path_var.get()      # Get source (Text or Document)
-    text_input = text_input_var.get()        # Get text input if Source is "Text"
     k_value = k_var.get()                    # Get K value for clustering
     vectorization = vectorization_var.get()  # Get vectorization method
     similarity = similarity_var.get()        # Get similarity measure
@@ -27,66 +26,39 @@ def start_process():
     }
 
     document_texts, document_names = load_documents_from_folder(doc_path)
-    text_input = [(text_input if source == "Text" else load_document(source_path))] if mode == "Query Mode" else []
+    text_input = [(text_box.get("1.0", "end-1c") if source == "Text" else load_document(source_path))] if mode == "Query Mode" else []
     
-    corpus = create_corpus(document_texts + text_input, True, delimiters, mode == "Outlier Detection") if vectorization != "SBERT Vectorization" else None
+    corpus = create_corpus(document_texts + text_input, delimiters, mode == "Outlier Detection") if vectorization != "SBERT Vectorization" else None
     
     vectors = vectorization_methods[vectorization](document_texts + text_input, corpus, delimiters, mode)
     document_vectors = vectors[:-1] if mode == "Query Mode" else vectors
     query_vector = vectors[-1] if mode == "Query Mode" else []
 
     if mode == "Query Mode":
-        distances_from_query = [similarity_measures[similarity](vector, query_vector[0]) for vector in document_vectors]
-        display_query_result(distances_from_query, text_input[0], document_texts, document_names)
+        handle_query_mode(query_vector, document_vectors, similarity_measures[similarity], text_input[0], document_names)
 
     elif mode == "Outlier Detection":
-        ranked_outliers, scores = rank_outliers_with_scores(document_vectors, document_names, similarity_measures[similarity])
-        display_detect_outliers_result(ranked_outliers, scores)
-
+        handle_outlier_detection_mode(document_vectors, document_names, similarity_measures[similarity])
+        
     elif mode == "Cluster Visualization":
-        clusters = create_clusters(document_vectors, k_value, similarity_measures[similarity])
-        display_clusters(clusters)
-
+        handle_cluster_mode(int(k_value), document_vectors, document_names)
 
 ### Tkinter Code
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 
-def browse_folder():
+def browse_folder() -> None:
     folder_path = filedialog.askdirectory()
     if folder_path:
         doc_path_var.set(folder_path)
 
-def browse_file():
+def browse_file() -> None:
     file_path = filedialog.askopenfilename()
     if file_path:
         source_path_var.set(file_path)
 
-def start_process():
-    delimiters = delimiter_var.get()
-    doc_path = doc_path_var.get()
-    mode = mode_var.get()
-    vectorization = vectorization_var.get()
-    similarity = similarity_var.get()
-    k_value = k_var.get()
-    source = source_var.get()
-    text_input = text_input_var.get()
-
-    # Handle form submission (for demonstration)
-    messagebox.showinfo(
-        "Start Process",
-        f"Delimiters: {delimiters}\n"
-        f"Documents Path: {doc_path}\n"
-        f"Mode: {mode}\n"
-        f"Vectorization: {vectorization}\n"
-        f"Similarity: {similarity}\n"
-        f"K Value: {k_value}\n"
-        f"Source: {source}\n"
-        f"Text Input: {text_input}"
-    )
-
-def update_mode_options():
+def update_mode_options() -> None:
     if mode_var.get() == "Query Mode":
         source_frame.pack(fill=tk.X, padx=10, pady=5, before=vectorization_label)
         k_frame.pack_forget()
@@ -100,7 +72,7 @@ def update_mode_options():
     root.update_idletasks()
     root.geometry("")
 
-def update_source_selection():
+def update_source_selection() -> None:
     if source_var.get() == "Text":
         text_box.pack(fill=tk.X, padx=0, pady=0)
         source_path_frame.pack_forget()
@@ -108,7 +80,7 @@ def update_source_selection():
         source_path_frame.pack(fill=tk.X, padx=0, pady=0)
         text_box.pack_forget()
 
-def update_similarity_options():
+def update_similarity_options() -> None:
     if vectorization_var.get() == "Binary Count Vectorization":
         jaccard_radio.config(state=tk.NORMAL)
     else:
@@ -125,7 +97,6 @@ doc_path_var = tk.StringVar()
 mode_var = tk.StringVar(value="Query Mode")
 source_var = tk.StringVar(value="Text")
 source_path_var = tk.StringVar()
-text_input_var = tk.StringVar()
 k_var = tk.StringVar()
 vectorization_var = tk.StringVar(value="TF-IDF Vectorization")
 similarity_var = tk.StringVar(value="Cosine Distance")
