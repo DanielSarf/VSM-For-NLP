@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 import string
-from similarity_measures import l2_norm_distance
+from similarity_measures import l2_norm_distance, cosine_distance, jaccard_similarity
 
 nltk.download('stopwords')
 stopwords_set = set(nltk.corpus.stopwords.words('english'))
@@ -100,7 +100,9 @@ def handle_query_mode(query_vector: np.ndarray, document_vectors: np.ndarray, si
     for document_name, distance in sorted_results:
         if similarity_measure == l2_norm_distance:
             tk.Label(results_frame, text=f"{document_name} - Similarity: {1 / (1 + distance):.2f}").pack(anchor="w", padx=10)  # L2 Norm
-        else:
+        elif similarity_measure == cosine_distance:
+            tk.Label(results_frame, text=f"{document_name} - Similarity: {(1 + distance) / 2:.2f}").pack(anchor="w", padx=10)
+        elif similarity_measure == jaccard_similarity:
             tk.Label(results_frame, text=f"{document_name} - Similarity: {distance:.2f}").pack(anchor="w", padx=10)
 
 def handle_outlier_detection_mode(document_vectors: np.ndarray, document_names: List[str], similarity_measure: Callable) -> Tuple[List[str], List[float]]:
@@ -118,6 +120,17 @@ def handle_outlier_detection_mode(document_vectors: np.ndarray, document_names: 
 
             scores.append(1 - mean_similarity)
     
+    # Normalization
+    scores = np.array(scores)
+    score_min = np.min(scores)
+    score_max = np.max(scores)
+    score_range = score_max - score_min
+
+    if score_range == 0:
+        scores = np.zeros_like(scores)
+    else:
+        scores = (scores - score_min) / score_range
+
     # For Cosine Similarity, lower value -> higher outlier score
     sorted_indices = np.argsort(scores)[::-1]  # Reverse the order to get most outlying documents first
     sorted_outliers = [document_names[i] for i in sorted_indices]
